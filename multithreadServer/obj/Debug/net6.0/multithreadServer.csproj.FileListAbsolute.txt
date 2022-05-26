@@ -1,0 +1,15 @@
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\bin\Debug\net6.0\multithreadServer.exe
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\bin\Debug\net6.0\multithreadServer.deps.json
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\bin\Debug\net6.0\multithreadServer.runtimeconfig.json
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\bin\Debug\net6.0\multithreadServer.dll
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\bin\Debug\net6.0\multithreadServer.pdb
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.csproj.AssemblyReference.cache
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.AssemblyInfoInputs.cache
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.AssemblyInfo.cs
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.csproj.CoreCompileInputs.cache
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.dll
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\refint\multithreadServer.dll
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.pdb
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\multithreadServer.genruntimeconfig.cache
+C:\Users\Administrator\Desktop\multithreadServer\multithreadServer\obj\Debug\net6.0\ref\multithreadServer.dll

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="tictactoe.css">   
+    <script src="tictactoe.js"></script>
+    <title>Tic Tac Toe</title>
+</head>
+<body onload="setbtn()">
+    <table class="gameBoard" border = "1" align="center">
+        <tr>
+            <td id="b1" class="box" onclick="reBoard(1);"></td>
+            <td id="b2" class="box" onclick="reBoard(2);"></td>
+            <td id="b3" class="box" onclick="reBoard(3);"></td>
+        </tr>
+        <tr>
+            <td id="b4" class="box" onclick="reBoard(4);"></td>
+            <td id="b5" class="box" onclick="reBoard(5);"></td>
+            <td id="b6" class="box" onclick="reBoard(6);"></td>
+        </tr>
+        <tr>
+            <td id="b7" class="box" onclick="reBoard(7);"></td>
+            <td id="b8" class="box" onclick="reBoard(8);"></td>
+            <td id="b9" class="box" onclick="reBoard(9);"></td>
+        </tr>
+
+    </table>
+    <div id="des" class="description" align="center">
+        To play, you need a valid username. This is be obtained from http://localhost:8080/register. Use this username for the entire play session.
+        <br>
+        To mark the space, just right click your mouse on the box you want to mark. "X" mark goes first.
+        <br>
+        To win the game, you have to make three of your marks in a horizontal, vertical, or diagonal row.
+    </div>
+    <div class="wrapper">
+        Username:
+        <input id="input" type="text" name="username" />
+        <button onclick="startGame();" id="tryGame" class="btn clearButton">Try Game</button>
+        <button onclick="sendMove();" id="sendMove" class="btn clearButton">Send My Move</button>
+        <button onclick="getMove();" id="getMove" class="btn clearButton">Get Their Move</button>
+        <button onclick="quitGame()" id="quitGame" class="btn clearButton">Quit Game</button>
+    </div>
+    <div id="message" align="center">To start, specify a valid username, and "Try Game".</div>
+</body>
+
+</html>
