@@ -12,6 +12,8 @@ function startGame() {
     const url="http://localhost:8080/pairme?player="+name;
     const httpRequest = new XMLHttpRequest();
     httpRequest.open('GET', url);
+    httpRequest.setRequestHeader("Connection", "keep-alive");
+    httpRequest.setRequestHeader("Keep-Alive", "timeout=60, max=100");
     httpRequest.send();
     httpRequest.onload = function(){
         response=httpRequest.responseText;
@@ -50,6 +52,8 @@ function sendMove(){
     console.log("url: "+url);
     var httpRequest = new XMLHttpRequest();
     httpRequest.open('GET', url);
+    httpRequest.setRequestHeader("Connection", "keep-alive");
+    httpRequest.setRequestHeader("Keep-Alive", "timeout=60, max=100");
     httpRequest.send();
     httpRequest.onload = function(){
         response=httpRequest.responseText;
@@ -64,6 +68,8 @@ function getMove(){
     console.log("url: "+url);
     var httpRequest = new XMLHttpRequest();
     httpRequest.open('GET', url);
+    httpRequest.setRequestHeader("Connection", "keep-alive");
+    httpRequest.setRequestHeader("Keep-Alive", "timeout=60, max=100");
     httpRequest.send();
     httpRequest.onload = function(){
         response=httpRequest.responseText;
@@ -100,12 +106,14 @@ function quitGame(){
     console.log("url: "+url);
     var httpRequest = new XMLHttpRequest();
     httpRequest.open('GET', url);
+    httpRequest.setRequestHeader("Connection", "keep-alive");
+    httpRequest.setRequestHeader("Keep-Alive", "timeout=60, max=100");
     httpRequest.send();
     httpRequest.onload = function(){
         response=httpRequest.responseText;
         console.log(response);
     }
-    //setMessage(response);
+    setMessage("To start, specify a valid username, and \"Try Game\".");
     clearBox();
     setbtn();
     document.getElementById("tryGame").style.display="inline-block";
