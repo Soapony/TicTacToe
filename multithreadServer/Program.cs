@@ -1,17 +1,13 @@
-﻿using System;
-using System.Net;
-using System.Net.Sockets;
+using System;  
+using System.Net;  
+using System.Net.Sockets;  
 using System.Text;
-using System.Threading;
-using System.Text.RegularExpressions;
-
+using System.Threading;  
+  
 public class threadData
 {
-    public Socket handler;
     public string username;
     public string gameid;
-    public long timestamp;
-    public string command;
     public string mark;
 }
 
@@ -23,8 +19,8 @@ public class gameData
     public char[] board;
 }
 
-public class SynchronousSocketListener
-{
+public class SynchronousSocketListener {  
+
     public static char[] dic = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
 
     public Queue<string> waiting = new Queue<string>();
@@ -33,347 +29,102 @@ public class SynchronousSocketListener
 
     public List<gameData> gameList = new List<gameData>();
 
-    public static long getTimestamp()
-    {
-        return (DateTime.Now.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
-    }
-
-    public static void register(Object Obj)
-    {
-        Socket handler = (Socket)Obj;
-        IPEndPoint newclient = (IPEndPoint)handler.RemoteEndPoint;
-        Console.WriteLine("Connection established with " + newclient.Address.ToString() + ":" + newclient.Port.ToString());
-        Random random = new Random();
-        string name = "";
-        for (int i = 0; i < 10; i++)
-        {
-            name += dic[random.Next(0, 15625) % 25];
-        }
+    public string respondHttp(string body){
         string statusLine = "HTTP/1.1 200 OK\r\n";
-        string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-        string responseBody = name;
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for /register");
-        handler.Send(Encoding.UTF8.GetBytes(statusLine));
-        handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-        handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-        handler.Send(Encoding.UTF8.GetBytes(responseBody));
-        handler.Shutdown(SocketShutdown.Both);
-        handler.Close();
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " closing connection with " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " and terminating");
+        string responseBody = body;
+        string bodyLengh="Content-Length: "+responseBody.Length.ToString()+"\r\n";
+        string responseHeader = "Content-Type: text/html\r\nConnection: keep-alive\r\nKeep-Alive: timeout=60, max=100\r\nAccess-Control-Allow-Origin: *\r\n"+bodyLengh+"\r\n"; 
+        return statusLine+responseHeader+responseBody;
     }
 
-    public static void favicon(Object Obj)
-    {
-        Socket handler = (Socket)Obj;
+    public void handleRequest(object socket){
+        Socket handler=(Socket) socket;
         IPEndPoint newclient = (IPEndPoint)handler.RemoteEndPoint;
+        // string username="";
+        // string gameid="";
+        // string mark="";
         Console.WriteLine("Connection established with " + newclient.Address.ToString() + ":" + newclient.Port.ToString());
-        string statusLine = "HTTP/1.1 200 OK\r\n";
-        string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-        string responseBody = "favicon";
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for /favicon.ico");
-        handler.Send(Encoding.UTF8.GetBytes(statusLine));
-        handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-        handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-        handler.Send(Encoding.UTF8.GetBytes(responseBody));
-        handler.Shutdown(SocketShutdown.Both);
-        handler.Close();
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " closing connection with " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " and terminating");
-    }
+        try{
+            while(true){
+                byte[] buffer = new byte[1024];
+                int bytesRead = 0;
+                string request = "";
 
-    public static void Error(Object Obj)
-    {
-        Socket handler = (Socket)Obj;
-        IPEndPoint newclient = (IPEndPoint)handler.RemoteEndPoint;
-        Console.WriteLine("Connection established with " + newclient.Address.ToString() + ":" + newclient.Port.ToString());
-        string statusLine = "HTTP/1.1 404 Bad Request\r\n";
-        string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-        string responseBody = "";
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for incorrect Endpoint");
-        handler.Send(Encoding.UTF8.GetBytes(statusLine));
-        handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-        handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-        handler.Send(Encoding.UTF8.GetBytes(responseBody));
-        handler.Shutdown(SocketShutdown.Both);
-        handler.Close();
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " closing connection with " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " and terminating");
-    }
-
-
-    public void playerThread(Object Obj)
-    {
-        //handle single player
-        string name = dataList.Last().username;
-        Socket handler1 = (Socket)Obj;
-        IPEndPoint newclient = (IPEndPoint)handler1.RemoteEndPoint;
-        Console.WriteLine("Connection established with " + newclient.Address.ToString() + ":" + newclient.Port.ToString());
-        while (true)
-        {
-            //fetch command
-            string command;
-            Socket handler;
-            string mark;
-            string gameid;
-            lock (dataList)
-            {
-                var tmp = dataList.Where(x => x.username == name).FirstOrDefault();
-                command = tmp.command;
-                handler = tmp.handler;
-                mark = tmp.mark;
-                gameid = tmp.gameid;
-                tmp.command = "";
-            }
-            
-            if (command == "")
-            {
-                Thread.Sleep(1000);
-                continue;
-            }
-            //process command
-            if(command == "timeout000000")
-            {
-                //timeout
-                lock (dataList)
+                while (true)
                 {
-                    var user1 = dataList.Where(x => x.username == name).FirstOrDefault();
-                    dataList.Remove(user1);
-                }
-                break;
-            }
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for " + command);
-            if (string.Compare(command.Substring(1, 6), "pairme") == 0)
-            {
-                //paireme
-                //Console.WriteLine("Userdata: "+tmp.username+" "+tmp.gameid+" "+tmp.command+" "+tmp.mark+" "+tmp.timestamp);
-                string statusLine = "HTTP/1.1 200 OK\r\n";
-                string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-                if (gameid == "")
-                {
-                    string responseBody = "wait";
-                    handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                    handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                    handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                    handler.Send(Encoding.UTF8.GetBytes(responseBody));
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
-                }
-                else
-                {
-                    var game = gameList.Where(x => x.gameid == gameid).FirstOrDefault();
-                    string oppName = (mark == "X" ? game.O : game.X);
-                    string responseBody = mark + " " + oppName + " " + game.gameid;
-                    handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                    handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                    handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                    handler.Send(Encoding.UTF8.GetBytes(responseBody));
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
-                }
-            }
-            else if (string.Compare(command.Substring(1, 6), "mymove") == 0)
-            {
-                //mymove
-                string statusLine = "HTTP/1.1 200 OK\r\n";
-                string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-                string[] splits = command.Split(new char[3]{'?', '=', '&'});
-                string gameId = splits[4];
-                string move = splits[6];
-                lock (gameList)
-                {
-                    if (gameList.Exists(x => x.gameid == gameId))
+                    bytesRead = handler.Receive(buffer);
+                    if(bytesRead == 0){
+                        break;
+                    }   
+                    request += Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    if (buffer[bytesRead - 1] == 10 && buffer[bytesRead - 2] == 13) // && buffer[bytesRead-3] == 10 && buffer[bytesRead-4] == 13) 
                     {
-                        var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
-                        for (int i = 0; i < game.board.Length; i++)
-                        {
-                            game.board[i] = move[i];
-                            //Console.Write(game.board[i]);
-                        }
-                    }
-                } 
-                //Console.WriteLine();
-                handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                handler.Send(Encoding.UTF8.GetBytes(""));
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-            }
-            else if (string.Compare(command.Substring(1, 9), "theirmove") == 0)
-            {
-                //theirmove
-                string statusLine = "HTTP/1.1 200 OK\r\n";
-                string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-                string[] splits = command.Split(new char[3] { '?', '=', '&' });
-                string gameId = splits[4];
-                string move = "";
-                lock (gameList)
-                {
-                    if(gameList.Exists(x => x.gameid == gameId)){
-                        var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
-                        for (int i = 0; i < game.board.Length; i++)
-                        {
-                            move += game.board[i];
-                        }
-                    }
-                }         
-                //Console.WriteLine(move);
-                handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                handler.Send(Encoding.UTF8.GetBytes(move));
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-            }
-            else if (string.Compare(command.Substring(1, 4), "quit") == 0)
-            {
-                //quit
-                string statusLine = "HTTP/1.1 200 OK\r\n";
-                string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-                string[] splits = command.Split(new char[3] { '?', '=', '&' });
-                string gameId = splits[4];
-                lock (dataList)
-                {
-                    var user1 = dataList.Where(x => x.username == name).FirstOrDefault();
-                    dataList.Remove(user1);
-                }
-                lock (gameList)
-                {
-                    if (gameList.Exists(x => x.gameid == gameId))
-                    {
-                        var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
-                        string oppName = (mark == "X" ? game.O : game.X);
-                        gameList.Remove(game);
-                    }
-                } 
-                handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                handler.Send(Encoding.UTF8.GetBytes(""));
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
-                break;
-            }
-            else
-            {
-                //404
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " 404");
-            }
-            Thread.Sleep(1000);
-        }
-        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " closing connection with " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " and terminating");
-    }
-
-    public void checkingThread()
-    {
-        //Console.WriteLine("chekcing thread started");
-        while (true)
-        {
-            Thread.Sleep(30000);
-            long curTime=getTimestamp();
-            //Console.WriteLine("wake now: "+curTime);
-            lock (dataList)
-            {
-                for(int i=0; i < dataList.Count; i++)
-                {
-                    //Console.WriteLine("thread timestamp: " + dataList[i].timestamp);
-                    if((curTime - dataList[i].timestamp) > 60)
-                    {
-                        dataList[i].command = "timeout000000";
-                        //Console.WriteLine("timeout command:"+dataList[i].command);
+                        break;
                     }
                 }
-            }
-            //Console.WriteLine("sleep");
-        }
-    }
 
-    public void StartListening()
-    {
-
-        IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-        IPAddress ipAddress = IPAddress.Loopback;
-        IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 8080);
-        Socket listener = new Socket(AddressFamily.InterNetwork,
-            SocketType.Stream, ProtocolType.Tcp);
-        Thread the = new Thread(new ThreadStart(checkingThread));
-        the.Start();
-        try
-        {
-            listener.Bind(localEndPoint);
-            listener.Listen(10);
-            Console.WriteLine("Listening at 127.0.0.1:8080");
-
-            while (true)
-            {
-                Socket handler = listener.Accept();
-                string data = null;
-                byte[] bytes = new Byte[1024];
-                int bytesRec = handler.Receive(bytes);
-                data = Encoding.ASCII.GetString(bytes, 0, bytesRec);
-                string[] splits = data.Split(' ');
-                if(splits.Length < 2)
-                {
-                    continue;
+                if(bytesRead == 0){
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " closing connection with " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " and terminating");
+                    break;
                 }
 
-                //Console.WriteLine(data);
+                string[] splits = request.Split(' ');
 
+                //endpoints
                 if (splits[1] == "/register")
                 {
-                    Thread th = new Thread(new ParameterizedThreadStart(register));
-                    th.Start(handler);
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for /register");
+                    string name=register();
+                    handler.Send(Encoding.UTF8.GetBytes(respondHttp(name)));
                 }
                 else if (splits[1] == "/favicon.ico")
                 {
-                    Thread th = new Thread(new ParameterizedThreadStart(favicon));
-                    th.Start(handler);
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for /favicon.ico");
+                    handler.Send(Encoding.UTF8.GetBytes(respondHttp("")));
                 }
                 else if(splits[1].Length < 8)
                 {
-                    Thread th = new Thread(new ParameterizedThreadStart(Error));
-                    th.Start(handler);
+                    string statusLine = "HTTP/1.1 404 Bad Request\r\n";
+                    string responseHeader = "Content-Type: text/html\r\nConnection: keep-alive\r\nKeep-Alive: timeout=60, max=100\r\nAccess-Control-Allow-Origin: *Content-Length: 0\r\n\r\n";
+                    handler.Send(Encoding.UTF8.GetBytes(statusLine+responseHeader));
                 }
                 else if (string.Compare(splits[1].Substring(1, 6), "pairme") == 0)
                 {
                     //paireme
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for "+splits[1]);
                     string name = splits[1].Substring(15);
                     if (dataList.Exists(x => x.username == name))             //exist user
                     {
-                        lock (dataList)
-                        {
-                            var tmp = dataList.Where(X => X.username == name).FirstOrDefault();
-                            tmp.command = splits[1];
-                            tmp.handler = handler;
-                            tmp.timestamp = getTimestamp();
+                        var tmp=dataList.Where(x => x.username == name).FirstOrDefault();
+                        if(tmp.gameid == ""){
+                            handler.Send(Encoding.UTF8.GetBytes(respondHttp("wait")));
+                        }else{
+                            var game = gameList.Where(x => x.gameid == tmp.gameid).FirstOrDefault();
+                            string oppName = (tmp.mark == "X" ? game.O : game.X);
+                            string responseBody = tmp.mark + " " + oppName + " " + game.gameid;
+                            handler.Send(Encoding.UTF8.GetBytes(respondHttp(responseBody)));
                         }
-                        
                     }
                     else if (waiting.Count == 0)             //new user, the first one
                     {
                         threadData tmp = new threadData();
                         tmp.username = name;
-                        tmp.command = splits[1];
                         tmp.gameid = "";
-                        tmp.timestamp = getTimestamp();
                         tmp.mark = "X";
-                        tmp.handler= handler;
                         lock (dataList)
                         {
                             dataList.Add(tmp);
                         }                        
                         waiting.Enqueue(name);
-                        Thread th = new Thread(new ParameterizedThreadStart(playerThread));
-                        th.Start(handler);
+                        handler.Send(Encoding.UTF8.GetBytes(respondHttp("wait")));
                     }
                     else                        //new user, the second one
                     {
                         threadData tmp = new threadData();
                         tmp.username = name;
-                        tmp.command = splits[1];
                         string UUID = Guid.NewGuid().ToString();
                         tmp.gameid = UUID;
-                        tmp.timestamp = getTimestamp();
                         tmp.mark = "O";
-                        tmp.handler = handler;
                         lock (dataList)
                         {
                             dataList.Add(tmp);
@@ -393,60 +144,140 @@ public class SynchronousSocketListener
                         {
                             gameList.Add(game);
                         }
-                        Thread th = new Thread(new ParameterizedThreadStart(playerThread));
-                        th.Start(handler);
+                        string responseBody = tmp.mark + " " + tmpName + " " + UUID;
+                        handler.Send(Encoding.UTF8.GetBytes(respondHttp(responseBody)));
                     }
                 }
-                else if(string.Compare(splits[1].Substring(1, 6), "mymove") == 0 || string.Compare(splits[1].Substring(1, 9), "theirmove") == 0 || string.Compare(splits[1].Substring(1, 4), "quit") == 0)
+                else if(string.Compare(splits[1].Substring(1, 6), "mymove") == 0)
                 {
-                    //other command
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for "+splits[1]);
                     string[] split = splits[1].Split(new char[3] { '?', '&', '=' });
                     string name = split[2];
-                    lock (dataList)
+                    if(dataList.Exists(x => x.username == name))
                     {
-                        if(dataList.Exists(x => x.username == name))
+                        string gameId = split[4];
+                        string move = split[6];
+                        lock (gameList)
                         {
-                            var tmpD = dataList.Where(x => x.username == name).FirstOrDefault();
-                            tmpD.timestamp = getTimestamp();
-                            tmpD.handler = handler;
-                            tmpD.command = splits[1];
+                            if (gameList.Exists(x => x.gameid == gameId))
+                            {
+                                var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
+                                for (int i = 0; i < game.board.Length; i++)
+                                {
+                                    game.board[i] = move[i];
+                                }
+                            }
                         }
-                        else
-                        {
-                            string statusLine = "HTTP/1.1 200 OK\r\n";
-                            string responseHeader = "Content-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n";
-                            string responseBody = "";
-                            handler.Send(Encoding.UTF8.GetBytes(statusLine));
-                            handler.Send(Encoding.UTF8.GetBytes(responseHeader));
-                            handler.Send(Encoding.UTF8.GetBytes("\r\n"));
-                            handler.Send(Encoding.UTF8.GetBytes(responseBody));
-                            handler.Shutdown(SocketShutdown.Both);
-                            handler.Close();
-                        }
+                        handler.Send(Encoding.UTF8.GetBytes(respondHttp("")));
+                    }
+                    else
+                    {
+                        handler.Send(Encoding.UTF8.GetBytes(respondHttp("")));
                     }
 
+                }
+                else if(string.Compare(splits[1].Substring(1, 9), "theirmove") == 0)
+                {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for "+splits[1]);
+                    string[] split = splits[1].Split(new char[3] { '?', '=', '&' });
+                    string gameId = split[4];
+                    string move = "";
+                    string name = split[2];
+                    if(dataList.Exists(x => x.username == name)){
+                        lock (gameList)
+                        {
+                            if(gameList.Exists(x => x.gameid == gameId)){
+                                var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
+                                for (int i = 0; i < game.board.Length; i++)
+                                {
+                                    move += game.board[i];
+                                }
+                                handler.Send(Encoding.UTF8.GetBytes(respondHttp(move))); 
+                            }
+                            else{
+                                handler.Send(Encoding.UTF8.GetBytes(respondHttp("000000000")));
+                            }
+                        }
+                    }else{
+                        handler.Send(Encoding.UTF8.GetBytes(respondHttp("000000000")));
+                    }   
+                }
+                else if(string.Compare(splits[1].Substring(1, 4), "quit") == 0)
+                {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " sent response to " + newclient.Address.ToString() + ":" + newclient.Port.ToString() + " for "+splits[1]);
+                    string[] split = splits[1].Split(new char[3] { '?', '=', '&' });
+                    string gameId = split[4];
+                    string name = split[2];
+                    if(dataList.Exists(x => x.username == name)){
+                        lock (dataList)
+                        {
+                            var user1 = dataList.Where(x => x.username == name).FirstOrDefault();
+                            dataList.Remove(user1);
+                        }
+                        lock (gameList)
+                        {
+                            if (gameList.Exists(x => x.gameid == gameId))
+                            {
+                                var game = gameList.Where(x => x.gameid == gameId).FirstOrDefault();
+                                gameList.Remove(game);
+                            }
+                        }
+                    }
+                    handler.Send(Encoding.UTF8.GetBytes(respondHttp("")));      
                 }
                 else
                 {
-                    Thread th = new Thread(new ParameterizedThreadStart(Error));
-                    th.Start(handler);
+                    string statusLine = "HTTP/1.1 404 Bad Request\r\n";
+                    string responseHeader = "Content-Type: text/html\r\nConnection: keep-alive\r\nKeep-Alive: timeout=60, max=100\r\nAccess-Control-Allow-Origin: *Content-Length: 0\r\n\r\n";
+                    handler.Send(Encoding.UTF8.GetBytes(statusLine+responseHeader));
                 }
 
-
-                //handler.Shutdown(SocketShutdown.Both);
-                //handler.Close();
             }
-
-        }
-        catch (Exception e)
-        {
+        }catch(Exception e){
             Console.WriteLine(e.ToString());
         }
-
-        Console.WriteLine("\nPress ENTER to continue...");
-        Console.Read();
-
+        handler.Shutdown(SocketShutdown.Both);  
+        handler.Close();  
     }
+  
+    public void StartListening() {  
+
+        IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());  
+        IPAddress ipAddress = IPAddress.Loopback;
+        IPEndPoint localEndPoint = new IPEndPoint(ipAddress, 8080);  
+        //Console.WriteLine("Server running at " + ipAddress + ":8080\n");
+    
+        Socket listener = new Socket(ipAddress.AddressFamily,  
+            SocketType.Stream, ProtocolType.Tcp );  
+  
+        try {  
+            listener.Bind(localEndPoint);  
+            listener.Listen(10);  
+            Console.WriteLine("Listening at 127.0.0.1:8080");
+            // Start listening for connections.
+            while (true)
+            {
+                new Thread(new ParameterizedThreadStart(handleRequest)).Start(listener.Accept());
+            }   
+        } catch (Exception e) {  
+            Console.WriteLine(e.ToString());  
+        }  
+  
+        Console.WriteLine("\nPress ENTER to continue...");  
+        Console.Read();  
+  
+    }
+
+    public string register()
+    {
+        Random random = new Random();
+        string name = "";
+        for (int i = 0; i < 10; i++)
+        {
+            name += dic[random.Next(0, 15625) % 25];
+        }
+        return name;
+    }  
 }
 
 public class main
